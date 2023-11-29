@@ -144,8 +144,10 @@ Fastly (a CDN provider sponsoring Jenkins project and used to cache our websites
 === R2 CloudFlare bucket
 
 R2 Buckets is a object storage service like AWS S3 proposed by CloudFlare, a CDN provider.
+
 The selling point of this solution is that there is no outbound bandwith cost, and their pricing per operation is more than reasonable. ($4.5 per million requests cf https://developers.cloudflare.com/r2/pricing/)
 
+Another advantage of CloudFlare is that they propose their services in China, which would greatly improve our SLA for our asian users.
 
 == Specification
 
@@ -161,6 +163,55 @@ The selling point of this solution is that there is no outbound bandwith cost, a
 // ====
 
 (TODO: detail implementation)
+
+The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io
+
+The content served by updates.jenkins.io comes from two distinct sources:
+- https://jenkins-infra/update-center2: (TODO: develop)
+- https://jenkins-infra/crawler: (TODO: develop)
+
+These jobs are running on trusted.ci.jenkins.io for security concerns.
+
+Mirrorbits is the tool we're using for mirrors.jenkins.io: https://github.com/etix/mirrorbits/
+
+> Mirrorbits is a geographical download redirector written in Go for distributing files efficiently across a set of mirrors. It offers a simple and economic way to create a Content Delivery Network layer using a pure software stack. It is primarily designed for the distribution of large-scale Open-Source projects with a lot of traffic.
+
+Mirrorbits uses a specific location as source of trust, and a list of mirrors.
+
+For the source of trust, we're using a File Share in an Azure Storage Account, allowing us to mount it as a volume. (TOOD: add explanations about this choice)
+
+The mirrorbits service is hosted on infra.ci.jenkins.io, released from an umbrella Helm chart we've created, with these as subcharts:
+- httpd, with the File Share mounted as persisten volume: Apache2 server to provide the source of trust
+- mirrorbits: the redirector service, running on amd64 until an arm64 release is available (reduced cost)
+- rsyncd: rsync service used to synchronise the content of the File Share from trusted.ci.jenkins.io job
+
+For mirrors, we're using R2 CloudFlare bucket, which can be exposed on a public domain by CloudFlare.
+
+The normal case to add a mirror with mirorrbits is to providing for each mirror an URL for HTTP content, and another rsync or FTP one for the scan process used by mirrorbits to determine if a specific mirror is up to date.
+
+As S3 sync isn't possible yet with mirrorbits, we're tricking it by setting the HTTP value of the mirror to the httpd service serving the File Share content.
+
+=== Migration plan
+
+==== Brownout
+
+(TODO: explain optin flag, etc.)
+
+==== Switch
+
+As a first step, we plan to keep uploading content to both the VM and mirorrbits storages (File Share and R2 buckets)
+
+(TODO: details much more than that)
+
+==== Validation
+
+(TODO)
+
+==== Cleanup
+
+When validated, we'll be able to reomve feature flag and stop updating legacy VM.
+
+Then, we'll remove the service from the VM.
 
 == Backwards Compatibility
 
@@ -212,7 +263,7 @@ There are no backwards compatibility concerns related to this proposal.
 // There are no migration concerns related to this proposal.
 // ====
 
-There are no migration concerns related to this proposal.
+There are no migration concerns related to this proposal for the consumers.
 
 == Security
 
