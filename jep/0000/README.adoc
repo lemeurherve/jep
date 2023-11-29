@@ -186,11 +186,11 @@ Mirrorbits is the tool we're using for mirrors.jenkins.io: https://github.com/et
 
 Mirrorbits uses a specific location as source of trust, and a list of mirrors.
 
-=== Source of trust
+==== Source of trust
 
 For the source of trust, we're using a File Share in an Azure Storage Account, allowing us to mount it as a volume. (TOOD: add explanations about this choice)
 
-=== Mirrors
+==== Mirrors
 
 For mirrors, we're using R2 CloudFlare bucket, which can be exposed on a public domain by CloudFlare.
 
@@ -209,7 +209,7 @@ apac	Asia-Pacific
 
 A mirror can be deployed in each of these regions for no additional charge and very little work.
 
-=== Hosting
+==== Hosting
 
 The mirrorbits service is hosted on the `publick8s` Azure AKS Kubernetes cluster, released from an umbrella Helm chart we've created, with these as subcharts:
 - httpd, with the File Share mounted as persisten volume: Apache2 server to provide the source of trust
@@ -218,7 +218,9 @@ The mirrorbits service is hosted on the `publick8s` Azure AKS Kubernetes cluster
 
 The R2 buckets are provided by CloudFlare in the Jenkins Infrastructure sponsored account.
 
-=== Migration plan
+(TODO: network rules?)
+
+=== Service migration plan
 
 ==== Brownout
 
