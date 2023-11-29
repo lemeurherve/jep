@@ -123,18 +123,19 @@ Additional motivation, the VM hosting this service is also hosting pkg.origin.je
 The plan as initially described in the INFRA-3001 Jira issue was to migrate this service to Oracle Cloud or Microsoft Azure.
 
 (TODO: copy/pasted from helpdesk, to be revised)
-- Oracle:
-  - Advantageous data plan
-    - First 10Tio of outbound data free
-    - 50Tio of outbound data would cost less than $3000 (three thousand) per month according to https://www.oracle.com/be/cloud/networking/networking-pricing.html[Oracle Pricing]
-  - ARM machines: cheaper and better performance for a simple webserver + SSH + data
-  - Block storage: close to archives.jenkins.io
-  - Risk: Oracle sponsoring program is only 1 year, and is not easily secured for payment as other accounts
 
-- Azure:
-  - Easily in AKS: easier management as we've already have a good part of the infrastructure already there
-  - Safer paiment process
-  - Risk: cost of outbound to be evaluated
+* Oracle:
+  * Advantageous data plan
+    * First 10Tio of outbound data free
+    * 50Tio of outbound data would cost less than $3000 (three thousand) per month according to https://www.oracle.com/be/cloud/networking/networking-pricing.html[Oracle Pricing]
+  * ARM machines: cheaper and better performance for a simple webserver + SSH + data
+  * Block storage: close to archives.jenkins.io
+  * Risk: Oracle sponsoring program is only 1 year, and is not easily secured for payment as other accounts
+
+* Azure:
+  * Easily in AKS: easier management as we've already have a good part of the infrastructure already there
+  * Safer paiment process
+  * Risk: cost of outbound to be evaluated
 
 === Fastly
 
@@ -284,12 +285,15 @@ There are no migration concerns related to this proposal.
 
 === Update Center
 
+(TODO: develop, explain flag, process, etc)
+
 Pull request to allow also uploading to Azure File Share and R2 buckets in addition to the pkg.origin.jenkins.io VM:
 https://github.com/jenkins-infra/update-center2/pull/745
 
 === Crawler
 
 (TODO: develop)
+
 Already pushing `updates` JSON files to Azure File Share and R2 buckets:
 https://github.com/jenkins-infra/crawler/blob/b4de64982ab15f6dd501775cb48960607bec847f/Jenkinsfile#L72-L94
 
