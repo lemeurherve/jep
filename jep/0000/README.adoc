@@ -220,28 +220,6 @@ The R2 buckets are provided by CloudFlare in the Jenkins Infrastructure sponsore
 
 (TODO: network rules?)
 
-=== Service migration plan
-
-==== Brownout
-
-(TODO: explain optin flag, etc.)
-
-==== Switch
-
-As a first step, we plan to keep uploading content to both the VM and mirorrbits storages (File Share and R2 buckets)
-
-(TODO: details much more than that)
-
-==== Validation
-
-(TODO)
-
-==== Cleanup
-
-When validated, we'll be able to reomve feature flag and stop updating legacy VM.
-
-Then, we'll remove the service from the VM.
-
 == Backwards Compatibility
 
 // [TIP]
@@ -400,6 +378,32 @@ https://github.com/jenkins-infra/crawler/blob/b4de64982ab15f6dd501775cb48960607b
 // Do any tasks depend on other tasks in a way that would serialize the implementation of the project?
 // JEPs that do not include a prototype implementation may omit this section.
 // ====
+
+=== Infrastructure team planning/roadmap?
+
+=== Security review
+
+=== Service migration plan
+
+==== Brownout
+
+(TODO: explain optin flag, etc.)
+
+==== Switch
+
+As a first step, we plan to keep uploading content to both the VM and mirorrbits storages (File Share and R2 buckets)
+
+(TODO: details much more than that)
+
+==== Validation
+
+(TODO)
+
+==== Cleanup
+
+When validated, we'll be able to reomve feature flag and stop updating legacy VM.
+
+Then, we'll remove the service from the VM.
 
 == References
 
