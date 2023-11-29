@@ -166,11 +166,19 @@ Another advantage of CloudFlare is that they propose their services in China, wh
 
 The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io
 
+=== Content
+
 The content served by updates.jenkins.io comes from two distinct sources:
+
+==== Update Center 2
 - https://jenkins-infra/update-center2: (TODO: develop)
+
+==== Crawler
 - https://jenkins-infra/crawler: (TODO: develop)
 
 These jobs are running on trusted.ci.jenkins.io for security concerns.
+
+=== Mirrorbits
 
 Mirrorbits is the tool we're using for mirrors.jenkins.io: https://github.com/etix/mirrorbits/
 
@@ -178,18 +186,37 @@ Mirrorbits is the tool we're using for mirrors.jenkins.io: https://github.com/et
 
 Mirrorbits uses a specific location as source of trust, and a list of mirrors.
 
+=== Source of trust
+
 For the source of trust, we're using a File Share in an Azure Storage Account, allowing us to mount it as a volume. (TOOD: add explanations about this choice)
 
-The mirrorbits service is hosted on infra.ci.jenkins.io, released from an umbrella Helm chart we've created, with these as subcharts:
-- httpd, with the File Share mounted as persisten volume: Apache2 server to provide the source of trust
-- mirrorbits: the redirector service, running on amd64 until an arm64 release is available (reduced cost)
-- rsyncd: rsync service used to synchronise the content of the File Share from trusted.ci.jenkins.io job
+=== Mirrors
 
 For mirrors, we're using R2 CloudFlare bucket, which can be exposed on a public domain by CloudFlare.
 
 The normal case to add a mirror with mirorrbits is to providing for each mirror an URL for HTTP content, and another rsync or FTP one for the scan process used by mirrorbits to determine if a specific mirror is up to date.
 
 As S3 sync isn't possible yet with mirrorbits, we're tricking it by setting the HTTP value of the mirror to the httpd service serving the File Share content.
+
+R2 buckets are rattached to a geographic region: https://developers.cloudflare.com/r2/reference/data-location/#location-hints
+
+Available regions:
+wnam	Western North America
+enam	Eastern North America
+weur	Western Europe
+eeur	Eastern Europe
+apac	Asia-Pacific
+
+A mirror can be deployed in each of these regions for no additional charge and very little work.
+
+=== Hosting
+
+The mirrorbits service is hosted on the `publick8s` Azure AKS Kubernetes cluster, released from an umbrella Helm chart we've created, with these as subcharts:
+- httpd, with the File Share mounted as persisten volume: Apache2 server to provide the source of trust
+- mirrorbits: the redirector service, running on amd64 until an arm64 release is available (reduced cost)
+- rsyncd: rsync service used to synchronise the content of the File Share from trusted.ci.jenkins.io job
+
+The R2 buckets are provided by CloudFlare in the Jenkins Infrastructure sponsored account.
 
 === Migration plan
 
@@ -334,6 +361,10 @@ There are no migration concerns related to this proposal for the consumers.
 // JEPs which will not include code changes may omit this section.
 // ====
 
+=== Infrastructure
+
+(TODO: list, note that we've created only one bucket in westeurope for now)
+
 === Update Center
 
 (TODO: develop, explain flag, process, etc)
@@ -357,3 +388,7 @@ https://github.com/jenkins-infra/crawler/blob/b4de64982ab15f6dd501775cb48960607b
 // ====
 
 - Help Desk issue where implementation progress is reported: https://github.com/jenkins-infra/helpdesk/issues/2649
+
+(TODO: list current jobs, existing VM & service and corresponding IaC)
+
+(TODO: sponsoring CloudFlare)
