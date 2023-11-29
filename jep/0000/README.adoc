@@ -166,17 +166,37 @@ Another advantage of CloudFlare is that they propose their services in China, wh
 
 The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io
 
+(TODO: list other tools here? rsync(d), azcopy (and why not blobxfer, Storage account access key VS File Share SAS fine-grained token and expiration date), aws-cli, httpd)
+
 === Content
 
 The content served by updates.jenkins.io comes from two distinct sources:
-
-==== Update Center 2
-- https://jenkins-infra/update-center2: (TODO: develop)
-
-==== Crawler
-- https://jenkins-infra/crawler: (TODO: develop)
+- update-center.json and site layout generated from https://jenkins-infra/update-center2
+- `updates` folder generated from https://jenkins-infra/crawler
 
 These jobs are running on trusted.ci.jenkins.io for security concerns.
+
+(TODO: note about signed JSON with cert)
+
+==== Update Center 2
+
+https://jenkins-infra/update-center2: (TODO: develop)
+
+Generate the update-center.json file downloaded by every Jenkins instance, and a site layout with simlinks as redirections (TODO: link to site layout, current update-center.actual.json (+explanation about diff with JSONB update-center.json)).
+
+- 400Gio cache for the permanent trusted.ci.jenkins.io agent
+- Run every 3 minutes
+  - Hard requirement? Could it be a bit more?
+- Critical (security?) wise (TODO: develop)
+
+==== Crawler
+
+https://jenkins-infra/crawler: (TODO: develop)
+
+Generate the list of tools and their versions available in the "tools" section of Jenkins.
+Populate the `updates` folder
+
+Run on ephemeral agent
 
 === Mirrorbits
 
@@ -208,6 +228,16 @@ eeur	Eastern Europe
 apac	Asia-Pacific
 
 A mirror can be deployed in each of these regions for no additional charge and very little work.
+
+==== Synchronisation script (mainly UC, TODO: add a quick note about crawler after)
+
+===== Existing system
+
+(TODO: details rsync with symlinks, --delete and `updates` folder exclude)
+
+===== New parallel sync mechanism to sync all storages
+
+(TODO: explain function using parallel(1), azcopy, aws-cli + R2 buckets (S3-like), rsync, www3 to get rid of simlinks for R2 buckets, TIME mirrorbits marker file generation)
 
 ==== Hosting
 
@@ -304,6 +334,12 @@ There are no migration concerns related to this proposal for the consumers.
 // ====
 
 (TODO: list all new infrastructure components created or updated for the PoC)
+<!--
+- Infra IaC
+- Credentials
+- Jobs
+- ...
+-->
 
 == Testing
 
