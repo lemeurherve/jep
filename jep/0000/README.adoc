@@ -77,7 +77,7 @@ updates.jenkins.io serves the JSON of the update center used by Jenkins instance
 
 This corresponds to around 10Tio of data served every month, representing one of the largest Jenkins infrastructure cost centers.
 
-This document describes how we can serve this content from R2 CloudFlare buckets (S3-like object store) instead of a VM on AWS to greatly reduce infrastructure costs and improve our quality of service.
+This document describes how we can serve this content from R2 CloudFlare buckets (S3-like object storage) instead of a VM on AWS to greatly reduce infrastructure costs and improve our quality of service.
 
 == Motivation
 
@@ -120,7 +120,7 @@ Additional motivation, the VM hosting this service is also hosting pkg.origin.je
 
 === Initial migration plan
 
-The plan as initially described in the INFRA-3001 Jira issue was to migrate this service to Oracle Cloud or Microsoft Azure.
+The plan as initially described in the INFRA-3001 Jira issue was to migrate this service to Oracle Cloud or Microsoft Azure to decrease costs.
 
 (TODO: copy/pasted from helpdesk, to be revised)
 
@@ -164,7 +164,7 @@ Another advantage of CloudFlare is that they propose their services in China, wh
 
 (TODO: detail implementation)
 
-The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io
+The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io by using mirrorbits.
 
 (TODO: list other tools here? rsync(d), azcopy (and why not blobxfer, Storage account access key VS File Share SAS fine-grained token and expiration date), aws-cli, httpd)
 
@@ -221,11 +221,11 @@ As S3 sync isn't possible yet with mirrorbits, we're tricking it by setting the 
 R2 buckets are rattached to a geographic region: https://developers.cloudflare.com/r2/reference/data-location/#location-hints
 
 Available regions:
-wnam	Western North America
-enam	Eastern North America
-weur	Western Europe
-eeur	Eastern Europe
-apac	Asia-Pacific
+* Western North America
+* Eastern North America
+* Western Europe
+* Eastern Europe
+* Asia-Pacific
 
 A mirror can be deployed in each of these regions for no additional charge and very little work.
 
