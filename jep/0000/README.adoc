@@ -176,7 +176,7 @@ The content served by updates.jenkins.io comes from two distinct sources:
 
 These jobs are running on trusted.ci.jenkins.io for security concerns.
 
-(TODO: note about signed JSON with cert)
+(TODO: note about signed JSON and fixed URLs with cert)
 
 ==== Update Center 2
 
