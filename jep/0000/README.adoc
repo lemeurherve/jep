@@ -250,6 +250,10 @@ The R2 buckets are provided by CloudFlare in the Jenkins Infrastructure sponsore
 
 (TODO: network rules?)
 
+==== New Core requirement(s?)
+
+Core must follow UC redirections introduced by mirrorbits, from updates.jenkins.io to the final mirror URL.
+
 == Backwards Compatibility
 
 // [TIP]
