@@ -149,6 +149,15 @@ The selling point of this solution is that there is no outbound bandwith cost, a
 
 Another advantage of CloudFlare is that they propose their services in China, which would greatly improve our SLA for our asian users.
 
+=== Mirroring mechanism
+
+(TODO: introduce and explain choice of mirrorbits)
+
+=== JEP versus IEP
+
+We chose to open a JEP instead of a IEP in https://github.com/jenkins-infra/iep as we think the scope of this project is larger than just the infrastructure aspect.
+We'll require for example that the Core must follow UC redirections introduced by mirrorbits.
+
 == Specification
 
 // [TIP]
