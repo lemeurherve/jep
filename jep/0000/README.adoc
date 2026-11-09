@@ -1,0 +1,469 @@
+= JEP-0000: Serve the Update Center JSON files from R2 CloudFlare buckets
+:toc: preamble
+:toclevels: 3
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+.Metadata
+[cols="1h,1"]
+|===
+| JEP
+| 0000
+
+| Title
+| Serve the Update Center JSON files from R2 CloudFlare buckets
+
+| Sponsor
+| link:https://github.com/lemeurherve[Hervé Le Meur], link:https://github.com/dduportal[Damien Duportal] :bulb:
+
+// Use the script `set-jep-status <jep-number> <status>` to update the status.
+| Status
+| Not Submitted :information_source:
+
+| Type
+| Process
+
+| Created
+| 2023/11/29
+
+| BDFL-Delegate
+| TBD
+
+//
+//
+// Uncomment if there is an associated placeholder JIRA issue.
+| JIRA
+| https://issues.jenkins.io/browse/INFRA-3100 https://issues.jenkins-ci.org/browse/INFRA-3100[INFRA-3100] (archived, replaced by https://github.com/jenkins-infra/helpdesk/issues/2649[help desk issue #2649])
+//
+//
+// Uncomment if discussion will occur in forum other than jenkinsci-dev@ mailing list.
+| Discussions-To
+| https://github.com/jenkins-infra/helpdesk/issues/2649
+//
+//
+// Uncomment if this JEP depends on one or more other JEPs.
+//| Requires
+//| :bulb: JEP-NUMBER, JEP-NUMBER... :bulb:
+//
+//
+// Uncomment and fill if this JEP is rendered obsolete by a later JEP
+//| Superseded-By
+//| :bulb: JEP-NUMBER :bulb:
+//
+//
+// Uncomment when this JEP status is set to Accepted, Rejected or Withdrawn.
+//| Resolution
+//| :bulb: Link to relevant post in the jenkinsci-dev@ mailing list archives :bulb:
+
+|===
+
+== Abstract
+
+// [TIP]
+// ====
+// Give a short (200 word) description of the technical issue addressed.
+
+// * Use present tense - describe what the proposal "does" (as if it were already done), not what it will do.
+// * Do not go into technical details and instead put those in the Specification section.
+// * Do not talk about history or why this needs to be done. Instead, add the history to the Motivation section.
+// ====
+
+updates.jenkins.io serves the JSON of the update center used by Jenkins instances all around the world to know what plugins are available for installation and which is their last version.
+
+This corresponds to around 10Tio of data served every month, representing one of the largest Jenkins infrastructure cost centers.
+
+This document describes how we can serve this content from R2 CloudFlare buckets (S3-like object storage) instead of a VM on AWS to greatly reduce infrastructure costs and improve our quality of service.
+
+== Motivation
+
+// [TIP]
+// ====
+// Explain why the existing code base or process is inadequate to address the problem that the JEP solves.
+// This section may also contain any historical context such as how things were done before this proposal.
+
+// * Provide a clear description of the high-level problem you are trying to solve.
+// * The problem statement should be written in terms of a specific symptom that affects users, contributors, or the project as a whole.
+// * The problem statement should not be written in terms of the solution.
+// * Do not discuss design choices or alternative designs that were rejected - those belong in the Reasoning section.
+// ====
+
+The service is currently hosted in a VM on AWS, alongside pkg.origin.jenkins.io (TODO: explain it better).
+
+This service is not behind a Content Delivery Network as it needs to be updated regularly, but serving these JSON files from a VM causes a lot of outbound data transfer.
+
+While the weight of these file is less than 3Mio, we estimate that around 300Gio of data are sent daily, 10Tio monthly.
+
+As AWS outbound bandwith is not cheap, this represents around a third/quarter (TODO: be more precise/check proportions) of Jenkins infrastructure monthly total costs.
+
+Additional motivation, the VM hosting this service is also hosting pkg.origin.jenkins.io (TODO: develop? corresponding service instead?), separating these services would help their maintenance.
+
+== Reasoning
+
+// [TIP]
+// ====
+// Explain why particular design decisions were made.
+// Describe alternate designs that were considered and related work. For example, how the feature is supported in other systems.
+// Provide evidence of consensus within the community and discuss important objections or concerns raised during discussion.
+
+// * Use sub-headings to organize this section for ease of readability.
+// * Provide a clear description of the cause of the problem.
+// * Provide a clear description of the high-level solution you have chosen and how it addresses the cause of the problem.
+// * If there were other possible solutions that you considered and rejected, mention those along with the corresponding reasoning.
+// * Do not describe implementation details; these should go into the Specification section instead.
+// * Do not talk about history or why this needs to be done - that is part of Motivation section.
+// ====
+
+=== Initial migration plan
+
+The plan as initially described in the INFRA-3001 Jira issue was to migrate this service to Oracle Cloud or Microsoft Azure to decrease costs.
+
+(TODO: copy/pasted from helpdesk, to be revised)
+
+* Oracle:
+  * Advantageous data plan
+    * First 10Tio of outbound data free
+    * 50Tio of outbound data would cost less than $3000 (three thousand) per month according to https://www.oracle.com/be/cloud/networking/networking-pricing.html[Oracle Pricing]
+  * ARM machines: cheaper and better performance for a simple webserver + SSH + data
+  * Block storage: close to archives.jenkins.io
+  * Risk: Oracle sponsoring program is only 1 year, and is not easily secured for payment as other accounts
+
+* Azure:
+  * Easily in AKS: easier management as we've already have a good part of the infrastructure already there
+  * Safer paiment process
+  * Risk: cost of outbound to be evaluated
+
+=== Fastly
+
+Fastly (a CDN provider sponsoring Jenkins project and used to cache our websites) has been mentioned as a potential alternative to serve this content, but there were concerns about uncaching challenge (time and steps), and the fact that it would exceed Fastly sponsorship program resources.
+
+=== R2 CloudFlare bucket
+
+R2 Buckets is a object storage service like AWS S3 proposed by CloudFlare, a CDN provider.
+
+The selling point of this solution is that there is no outbound bandwith cost, and their pricing per operation is more than reasonable. ($4.5 per million requests cf https://developers.cloudflare.com/r2/pricing/)
+
+Another advantage of CloudFlare is that they propose their services in China, which would greatly improve our SLA for our asian users.
+
+=== Mirroring mechanism
+
+(TODO: introduce and explain choice of mirrorbits)
+
+=== JEP versus IEP
+
+We chose to open a JEP instead of a IEP in https://github.com/jenkins-infra/iep as we think the scope of this project is larger than just the infrastructure aspect.
+We'll require for example that the Core must follow UC redirections introduced by mirrorbits.
+
+== Specification
+
+// [TIP]
+// ====
+// Provide a detailed specification of what is being proposed.
+// Be as technical and detailed as needed to allow new or existing Jenkins developers
+// to reasonably understand the scope/impact of an implementation.
+
+// * Use present tense - describe what the proposal "does" (as if it were already done), not what it will do.
+// * Do not discuss alternative designs that were rejected - those belong in the Reasoning section.
+// * Avoid in-depth discussion or justification of design choices - that belongs in the Reasoning section.
+// ====
+
+(TODO: detail implementation)
+
+The proposal is to use mirrorbits and R2 buckets as source for updates.jenkins.io by using mirrorbits.
+
+(TODO: list other tools here? rsync(d), azcopy (and why not blobxfer, Storage account access key VS File Share SAS fine-grained token and expiration date), aws-cli, httpd)
+
+=== Content
+
+The content served by updates.jenkins.io comes from two distinct sources:
+- update-center.json and site layout generated from https://jenkins-infra/update-center2
+- `updates` folder generated from https://jenkins-infra/crawler
+
+These jobs are running on trusted.ci.jenkins.io for security concerns.
+
+(TODO: note about signed JSON and fixed URLs with cert)
+
+==== Update Center 2
+
+https://jenkins-infra/update-center2: (TODO: develop)
+
+Generate the update-center.json file downloaded by every Jenkins instance, and a site layout with simlinks as redirections (TODO: link to site layout, current update-center.actual.json (+explanation about diff with JSONB update-center.json)).
+
+- 400Gio cache for the permanent trusted.ci.jenkins.io agent
+- Run every 3 minutes
+  - Hard requirement? Could it be a bit more?
+- Critical (security?) wise (TODO: develop)
+
+==== Crawler
+
+https://jenkins-infra/crawler: (TODO: develop)
+
+Generate the list of tools and their versions available in the "tools" section of Jenkins.
+Populate the `updates` folder
+
+Run on ephemeral agent
+
+=== Mirrorbits
+
+Mirrorbits is the tool we're using for mirrors.jenkins.io: https://github.com/etix/mirrorbits/
+
+> Mirrorbits is a geographical download redirector written in Go for distributing files efficiently across a set of mirrors. It offers a simple and economic way to create a Content Delivery Network layer using a pure software stack. It is primarily designed for the distribution of large-scale Open-Source projects with a lot of traffic.
+
+Mirrorbits uses a specific location as source of trust, and a list of mirrors.
+
+==== Source of trust
+
+For the source of trust, we're using a File Share in an Azure Storage Account, allowing us to mount it as a volume. (TOOD: add explanations about this choice)
+
+==== Mirrors
+
+For mirrors, we're using R2 CloudFlare bucket, which can be exposed on a public domain by CloudFlare.
+
+The normal case to add a mirror with mirorrbits is to providing for each mirror an URL for HTTP content, and another rsync or FTP one for the scan process used by mirrorbits to determine if a specific mirror is up to date.
+
+As S3 sync isn't possible yet with mirrorbits, we're tricking it by setting the HTTP value of the mirror to the httpd service serving the File Share content.
+
+R2 buckets are rattached to a geographic region: https://developers.cloudflare.com/r2/reference/data-location/#location-hints
+
+Available regions:
+* Western North America
+* Eastern North America
+* Western Europe
+* Eastern Europe
+* Asia-Pacific
+
+A mirror can be deployed in each of these regions for no additional charge and very little work.
+
+==== Synchronisation script (mainly UC, TODO: add a quick note about crawler after)
+
+===== Existing system
+
+(TODO: details rsync with symlinks, --delete and `updates` folder exclude)
+
+===== New parallel sync mechanism to sync all storages
+
+(TODO: explain function using parallel(1), azcopy, aws-cli + R2 buckets (S3-like), rsync, www3 to get rid of simlinks for R2 buckets, TIME mirrorbits marker file generation)
+
+==== Hosting
+
+The mirrorbits service is hosted on the `publick8s` Azure AKS Kubernetes cluster, released from an umbrella Helm chart we've created, with these as subcharts:
+- httpd, with the File Share mounted as persisten volume: Apache2 server to provide the source of trust
+- mirrorbits: the redirector service, running on amd64 until an arm64 release is available (reduced cost)
+- rsyncd: rsync service used to synchronise the content of the File Share from trusted.ci.jenkins.io job
+
+The R2 buckets are provided by CloudFlare in the Jenkins Infrastructure sponsored account.
+
+(TODO: network rules?)
+
+==== New Core requirement(s?)
+
+Core must follow UC redirections introduced by mirrorbits, from updates.jenkins.io to the final mirror URL.
+
+== Backwards Compatibility
+
+// [TIP]
+// ====
+// Describe any incompatibilities and their severity.
+// Describe how the JEP proposes to deal with these incompatibilities.
+
+// If there are no backwards compatibility concerns, this section may simply say:
+// There are no backwards compatibility concerns related to this proposal.
+// ====
+
+There are no backwards compatibility concerns related to this proposal.
+
+== Migration
+
+// [TIP]
+// ====
+// Describe the work that needs to be done, if any, to adapt consumers to the proposed change.
+
+// Conventional wisdom is that at least three consumers should exist to validate the design of an API;
+// with only one consumer the API probably won't support another consumer,
+// and with two consumers the API will probably only support more consumers with difficulty
+// (see "The Rule of Threes" in Will Tracz's _Confessions of a Used Program Salesman,_ Addison-Wesley, 1995).
+
+// Completing this section of the JEP involves quantifying
+// the number of consumers that need to be adapted (the cost)
+// and the expected value after adapting these consumers (the benefit).
+// Since the Jenkins project has thousands of individual components,
+// attempting to adapt too many consumers tends to reach a point of diminishing returns.
+// On the other hand, adapting too few consumers risks not only violating the Rule of Threes
+// but also introducing technical debt to the project in the form of incomplete migrations.
+// These incomplete migrations can in turn significantly delay the delivery of future JEPs.
+
+// In describing the work that needs to be done to adapt consumers,
+// this section should include a cost-benefit analysis and describe a rational approach to the migration
+// that balances short-term deliverability against long-term maintainability.
+
+// Typically, migrations should cover a large portion of the top 200 plugins and/or the plugins in the Bill of Materials (BOM),
+// as the overall health of the Jenkins project is contingent on the health of these popular plugins to a large degree.
+// When in doubt, begin the cost-benefit analysis with this general example
+// and then determine if the calculus needs to be adjusted for the particular case in question.
+
+// While not all consumers need to be fully migrated,
+// the scope of the migration does need to be fully quantified
+// in order for the design to stand on its own.
+
+// If consumers do not need to be adapted to this change, this section may simply say:
+// There are no migration concerns related to this proposal.
+// ====
+
+There are no migration concerns related to this proposal for the consumers.
+
+== Security
+
+// [TIP]
+// ====
+// Describe the security impact of this proposal.
+// Outline what was done to identify and evaluate security issues,
+// discuss potential security issues and how they are mitigated or prevented,
+// and detail how the JEP interacts with existing elements in Jenkins, such as permissions, authentication, authorization, etc.
+
+// If this proposal will have no impact on security, this section may simply say:
+// There are no security risks related to this proposal.
+// ====
+
+(TODO: assess security risks)
+
+== Infrastructure Requirements
+
+// [TIP]
+// ====
+// Describe any impact on the Jenkins project infrastructure.
+
+// Include any additions or changes, interactions with existing components,
+// potential instabilities, service-level agreements,
+// and responsibilities for continuing maintenance.
+// Explain the scope of infrastructure changes with sufficient detail
+// to allow initial and on-going cost (in both time and money) to be estimated.
+
+// If this proposal will have no impact on infrastructure, this section may simply say:
+// There are no new infrastructure requirements related to this proposal.
+// ====
+
+(TODO: list all new infrastructure components created or updated for the PoC)
+<!--
+- Infra IaC
+- Credentials
+- Jobs
+- ...
+-->
+
+== Testing
+
+// [TIP]
+// ====
+// If the JEP involves any kind of behavioral change to code
+// (whether in a Jenkins product or backend infrastructure),
+// give a summary of how its correctness (and, if applicable, compatibility, security, etc.) will be tested.
+
+// In the preferred case that automated tests will be developed to cover all significant changes, simply give a short summary of the nature of these tests.
+
+// If some or all of the changes will require human interaction to verify them, explain why automated tests are considered impractical.
+// Then, summarize what kinds of test cases might be required: user scenarios with action steps and expected outcomes.
+// Detail whether behavior might be different based on the platform (operating system, servlet container, web browser, etc.)?
+// Are there foreseeable interactions between different permissible versions of components (Jenkins core, plugins, etc.)?
+// Does this change require that any special tools, proprietary software, or online service accounts to exercise a related code path (e.g., Active Directory server, GitHub login, etc.)?
+// When will you complete testing relative to merging code changes, and might retesting be required if other changes are made to this area in the future?
+
+// If this proposal requires no testing, this section may simply say:
+// There are no testing issues related to this proposal.
+// ====
+
+(TODO: list our experiments)
+
+== Prototype Implementation
+
+// [TIP]
+// ====
+// Link to any open source reference implementation of code changes for this proposal.
+// The implementation need not be completed before the JEP is
+// link:https://github.com/jenkinsci/jep/tree/master/jep/1#accepted[accepted],
+// but must be completed before any JEP is given
+// "link:https://github.com/jenkinsci/jep/tree/master/jep/1#final[Final]" status.
+
+// JEPs which will not include code changes may omit this section.
+// ====
+
+=== Infrastructure
+
+(TODO: list, note that we've created only one bucket in westeurope for now)
+
+=== Update Center
+
+(TODO: develop, explain flag, process, etc)
+
+Pull request to allow also uploading to Azure File Share and R2 buckets in addition to the pkg.origin.jenkins.io VM:
+https://github.com/jenkins-infra/update-center2/pull/745
+
+=== Crawler
+
+(TODO: develop)
+
+Already pushing `updates` JSON files to Azure File Share and R2 buckets:
+https://github.com/jenkins-infra/crawler/blob/b4de64982ab15f6dd501775cb48960607bec847f/Jenkinsfile#L72-L94
+
+== Work Estimates
+
+// [TIP]
+// ====
+// Provide a clear description of the high-level tasks needed to productize the prototype implementation.
+// Ideally these tasks would be turned into work items in an issue tracking system (ITS) like Jira or GitHub Issues.
+// As a general rule, it should be possible to complete each task within 1-3 days;
+// if a task takes a week or longer, it has not been broken down with enough granularity.
+// If these tasks are not obvious, then the prototype is not complete enough.
+// Also describe the general roles needed to perform these tasks.
+// For example, is the task well-suited to a new contributor,
+// or does the task require advanced experience in the Jenkins project that demands a seasoned expert?
+// Perhaps the task is well-suited to contributors with an affinity for e.g. frontend development, security, or DevOps.
+// Finally, describe the nature of the work in relation to time:
+// can these tasks be picked up in parallel by any interested volunteers,
+// or do they need to be done in some specific order?
+// Do any tasks depend on other tasks in a way that would serialize the implementation of the project?
+// JEPs that do not include a prototype implementation may omit this section.
+// ====
+
+=== Infrastructure team planning/roadmap?
+
+=== Security review
+
+=== Service migration plan
+
+==== Brownout
+
+(TODO: explain optin flag, etc.)
+
+==== Switch
+
+As a first step, we plan to keep uploading content to both the VM and mirorrbits storages (File Share and R2 buckets)
+
+(TODO: details much more than that)
+
+==== Validation
+
+(TODO)
+
+==== Cleanup
+
+When validated, we'll be able to reomve feature flag and stop updating legacy VM.
+
+Then, we'll remove the service from the VM.
+
+== References
+
+// [TIP]
+// ====
+// Provide links to any related documents.
+// This will include links to discussions on the mailing list, pull requests, and meeting notes.
+// ====
+
+- Help Desk issue where implementation progress is reported: https://github.com/jenkins-infra/helpdesk/issues/2649
+
+(TODO: list current jobs, existing VM & service and corresponding IaC)
+
+(TODO: sponsoring CloudFlare)
