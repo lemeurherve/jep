@@ -100,7 +100,7 @@ For example:
 
 This approach preserves the existing Jenkins Core version in the image tag, while making independently published image revisions explicit.
 
-The model also distinguishes between floating version-specific tags, which point to the latest image revision for a Core version (ex: `2.580.3``), and immutable revision tags, which identify a specific image release.
+The model also distinguishes between floating version-specific tags, which point to the latest image revision for a Core version (ex: `2.580.3`), and immutable revision tags, which identify a specific image release.
 
 A single revision number shared across all official variants and architectures provides a consistent identifier for each complete image release.
 
@@ -289,9 +289,9 @@ The transition will take place at the first Jenkins Core release published under
 
 The `latest` and `lts` release line aliases adopt the new semantics as the corresponding new releases are published.
 
-The official Jenkins Docker image documentation MUST be updated to explain the new tag naming convention and the distinction between floating and immutable tags. The Jenkins Core release checklist MUST also be updated to account for the new image revision convention.
+The official Jenkins Docker image documentation MUST be updated to explain the new tag naming convention and the distinction between floating and immutable tags.
 
-The `jenkins-infra/release` Jenkins Core release checklist MUST be updated accordingly.
+The `jenkins-infra/release` Jenkins Core release checklist MUST be updated to account for the new image revision convention.
 
 The `jenkinsci/packaging` Jenkins Core packaging repository doesn't currently include anything related to the Docker controller image release and thus doesn't require any update.
 
@@ -306,11 +306,7 @@ The Jenkins infrastructure repositories that build or deploy derived controller 
 * https://github.com/jenkins-infra/docker-jenkins-lts
 * https://github.com/jenkins-infra/kubernetes-management
 
-Their Dockerfile base-image references, image version selection, deployment references, and related automation must be updated as applicable.
-
-The `latest` and `lts` release-line aliases adopt the new semantics as corresponding new releases are published.
-
-The official Jenkins Docker image documentation must be updated to explain the new tagging convention, including the distinction between floating version tags and immutable revision tags. The Jenkins Core release checklist must also be updated accordingly.
+Their Dockerfile base-image references, image version selection, deployment references, and related automation MUST be updated accordingly.
 
 == Security
 
@@ -355,9 +351,11 @@ The estimated work includes:
 * Updating Dockerfile base-image references, image version selection, deployment references, and related automation in the affected Jenkins infrastructure repositories
 * Validating the new tagging convention during the first Jenkins Core release published under the new convention
 
-The work can be carried out incrementally across the affected repositories before the first release using the new convention. As existing Docker controller image tags reference will remain unchanged and as new releases will still include floating tags corresponding to them, publication of new releases with image revisions won't break any existing usage and consumer.
+The work can be carried out incrementally across the affected repositories before the first release using the new convention.
 
-Except the first two ones, all other tasks shouldn't require any advanced experience in the Jenkins project to be implemented, and could be picked up in parallel by any interested volunteers.
+Existing Docker controller image tags will remain unchanged, and new releases will continue to publish the corresponding floating tags. Therefore, introducing image revisions will not break existing consumers or their configurations.
+
+Except for the first two tasks, all other tasks shouldn't require any advanced experience in the Jenkins project to be implemented, and could be picked up in parallel by any interested volunteers.
 
 == References
 
